@@ -7,12 +7,17 @@
 import ctypes
 import sys
 import hashlib
-
+import clipboard
 from PyQt4 import QtGui,QtCore
 
-Version = '0.1'
+
+byteMd5 = lambda b:hashlib.new('md5',b).digest()
+
+Version = '0.2'
 
 p = lambda s:ctypes.c_char_p(s)
+
+encrypted_flag = False#初始状态为加密方向
 
 #bytes转化为hex格式
 def bytesToViewable(b):
@@ -101,18 +106,24 @@ def decrypt_bytes(msg_b,key):
 def encrypt_string(str_plain,key):
     print('before encrypt string,str len = ',len(str_plain))
     text_bytes = str_plain.encode('utf-8')
-    
     key_bytes = key.encode('utf-8')
-    key_md5 = hashlib.new('md5',key_bytes).digest()
+    
+    if(len(text_bytes) == 0  or len(text_bytes) == 0):
+        return
+    
+    key_md5 = byteMd5(key_bytes)
     print('key_md5 = ',key_md5)
     print('before encrypt string,bytes len = ',len(text_bytes))
-    
+        
     #补全长度为8的整数倍
     if len(text_bytes)%8 !=0:#需要填充为8字节的整数倍
         tail_len = 8 - len(text_bytes)%8
         text_bytes += b' ' * tail_len
     else:
         tail_len = 0
+
+    md5_2 = byteMd5(text_bytes)[-8:]
+    text_bytes += md5_2
 
     ret = encrypt_bytes(text_bytes,key_md5)
     
@@ -123,8 +134,8 @@ def encrypt_string(str_plain,key):
     tmp[0] = tail_len
     ret += bytes(tmp)
 
-    #尾部附加md5的后四位作为校验信息
-    ret += hashlib.new('md5',ret).digest()[-4:]
+    #尾部附加md5(1)的后四位作为校验信息
+    ret += byteMd5(ret)[-4:]
     
     return bytesToViewable(ret)
 
@@ -138,39 +149,55 @@ def decrypt_string(str_encrypted,key):
     print('before decrypt string,str len = ',len(str_encrypted))
     
     key_bytes = key.encode('utf-8')
-    key_md5 = hashlib.new('md5',key_bytes).digest()
+    key_md5 = byteMd5(key_bytes)
     print('key_md5 = ',key_md5)
     
     encrypt_bytes = viewableToBytes(str_encrypted)
 
-    #去除尾部的md5信息
+    #去除尾部的md5(1)信息
     encrypt_bytes = encrypt_bytes[:-4]
 
     tail_len = ord(encrypt_bytes[-1:])
     encrypt_bytes = encrypt_bytes[:-1]#尾部长度信息
     print('tail len = ',tail_len)
 
-    print('before encrypt string,bytes len = ',len(encrypt_bytes))
+    print('before decrypt string,bytes len = ',len(encrypt_bytes))
 
     ret = decrypt_bytes(encrypt_bytes,key_md5)
     
-    print('after encrypt string,bytes len = ',len(ret))
+    print('after decrypt string,bytes len = ',len(ret))
     
+    md5_2 = ret[-8:]
+    ret = ret[:-8]#去除 md5(2)  
+
+    if(byteMd5(ret)[-8:] != md5_2):
+        print("口令错误")
+        QtGui.QMessageBox.warning(None,'Error','解码错误,请检查口令是否正确')
+
     #如果加密时在尾部填充了字符,那就在这里移除
     if tail_len > 0:
         ret = ret[:-tail_len]
-
-    try:
-        ret = ret.decode('utf-8')
-    except:#解码错误,保持原字符不变
-        global user_text
-        print('解码错误')
-        QtGui.QMessageBox.warning(None,'Error','解码错误,请检查口令是否正确')
-        ret = user_text.toPlainText()
+    
         
-    return ret
+    return ret.decode('utf-8')
         
+def save2file(file_name):
+    print('save2file:',file_name)
+    
+    if file_name[-4:].upper() != '.TXT':
+        file_name = file_name+'.txt'
+    
+    with open(file_name,'w') as f:
+        msg_str = user_text.toPlainText()
+        f.write(msg_str)
+    
+    QtGui.QMessageBox.information(None,'提示','已经保存窗口中内容到'+str(file_name))
 
+def save2clipboard():
+    print('save2board')
+    msg_str = user_text.toPlainText()
+    clipboard.SetClip(msg_str)
+    QtGui.QMessageBox.information(None,'提示','已经复制窗口中内容到剪贴板')
 
 
 
@@ -184,13 +211,13 @@ def judge_encrypted( msg_str ):
         return False
     
     #是否达到最小长度
-    if len(encrypt_bytes) < 8 + 1 + 4:
+    if len(encrypt_bytes) < 8 + 8 + 1 + 4:
         return False
         
-    md5_tail = encrypt_bytes[-4:]
+    md5_tail = encrypt_bytes[-4:]#md5(1)
     encrypt_bytes = encrypt_bytes[:-4]
     
-    if hashlib.new('md5',encrypt_bytes).digest()[-4:] == md5_tail:
+    if byteMd5(encrypt_bytes)[-4:] == md5_tail:
         return True
     else:
         return False
@@ -204,10 +231,8 @@ def refresh_gui():
     
     if judge_encrypted(msg_str) == True:
         encrypted_flag = True
-        print('12')
         trans_button.setText('解密')
     else:
-        print('34')
         encrypted_flag = False
         trans_button.setText('加密')
 
@@ -245,6 +270,9 @@ def main():
 
     layout_main = QtGui.QVBoxLayout()
     layout_up = QtGui.QHBoxLayout()
+    layout_down = QtGui.QHBoxLayout()
+    
+    layout_down.setMargin(0)
 
     global key,user_text,trans_button
     key_label = QtGui.QLabel("口令")
@@ -253,18 +281,33 @@ def main():
 
     user_text = QtGui.QTextEdit()
     
+    save2file_browser = QtGui.QFileDialog(None,'浏览文件','/',"文本文件(*.txt)")#参数:parent = None,caption,filter
+
+    save2file_button = QtGui.QPushButton('保存到文件') 
+    save2clipboard_button = QtGui.QPushButton('复制到剪贴板') 
+    
     layout_up.addWidget(key_label)
     layout_up.addWidget(key)
     #layout_up.addStretch(1)
     layout_up.addWidget(trans_button)
-    
+   
+    layout_down.addStretch(1)
+    layout_down.addWidget(save2file_button)
+    layout_down.addWidget(save2clipboard_button)
+
     layout_main.addLayout(layout_up)
-    layout_main.addWidget(user_text)
+    layout_main.addWidget(user_text)  
+    layout_main.addLayout(layout_down)
+    
     windows_main.setLayout(layout_main)
     
     trans_button.clicked.connect(trans)
-    
     user_text.textChanged.connect(refresh_gui)
+    
+    save2file_button.clicked.connect(save2file_browser.show)
+    save2file_browser.fileSelected.connect(save2file)
+    save2clipboard_button.clicked.connect(save2clipboard)
+    
     
     windows_main.show()
     sys.exit(app.exec_())
@@ -276,3 +319,18 @@ if __name__ == '__main__':
 else:
     print ('TextEncrypt.py had been imported as a module')
 
+
+
+
+#                                                     1,附加填充长度标记                                                        1,长度填充到8字节整数倍               
+#                                                            ↓                                                                            ↓
+#		        btytesToViewable()                      2,附加md5(1)                         encrypt_bytes()                       2,附加md5(2)                     utf-8  encode
+#           <-----------------------                  <----------------                  <----------------------               <--------------------               <---------------- 
+#hex string                           encrypted bytes                   encrypted bytes                            plain bytes                        plain bytes                      plain string
+#           ----------------------->                  ---------------->                  ----------------------->              -------------------->               ----------------> 
+#		        viewableToBytes()                       2,移除md5(1)                         decrypt_bytes()                       2移除md5(2)                      utf-8  decode
+#                                                            ↑                                                                            ↑
+#                                                      1,移除长度标记                                                                1,移除填充
+#                                                                              
+#
+#md5(1)用来检验解密是否正确,md5(1)用来标记一个字符串是否已被加密
