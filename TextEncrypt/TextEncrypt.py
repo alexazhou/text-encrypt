@@ -173,6 +173,7 @@ def decrypt_string(str_encrypted,key):
     if(byteMd5(ret)[-8:] != md5_2):
         print("口令错误")
         QtGui.QMessageBox.warning(None,'Error','解码错误,请检查口令是否正确')
+        return user_text.toPlainText()#返回当前字符
 
     #如果加密时在尾部填充了字符,那就在这里移除
     if tail_len > 0:
