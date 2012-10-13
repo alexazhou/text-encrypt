@@ -17,7 +17,7 @@ base = None
 if sys.platform == "win32":
     base = "Win32GUI"
 
-includes = ['re']
+includes = ['re','win32clipboard']
 excludes = []
 includefiles = ['des_X2.dll','img','imageformats']
 

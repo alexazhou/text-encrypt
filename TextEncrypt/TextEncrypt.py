@@ -13,7 +13,7 @@ from PyQt4 import QtGui,QtCore
 
 byteMd5 = lambda b:hashlib.new('md5',b).digest()
 
-Version = '0.2'
+Version = '0.3'
 
 p = lambda s:ctypes.c_char_p(s)
 
