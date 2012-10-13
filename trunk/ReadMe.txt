@@ -1,0 +1,1 @@
+a text encrypt program use Python and pyqt£¬the core algorithm is 128bit DES
