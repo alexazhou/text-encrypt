@@ -19,7 +19,9 @@ if sys.platform == "win32":
 
 includes = ['re','win32clipboard']
 excludes = []
-includefiles = ['des_X2.dll','img','imageformats']
+includefiles = ['des_X2.dll','img','imageformats','pywintypes32.dll']
+
+#['Microsoft.VC90.CRT.manifest','msvcm90.dll','msvcr90.dll','msvcp90.dll']
 
 setup(
         name = "simple_PyQt4",
