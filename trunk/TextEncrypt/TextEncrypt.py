@@ -13,7 +13,7 @@ from PyQt4 import QtGui,QtCore
 
 byteMd5 = lambda b:hashlib.new('md5',b).digest()
 
-Version = '0.4'
+Version = '0.5'
 
 p = lambda s:ctypes.c_char_p(s)
 
@@ -204,7 +204,6 @@ def save2clipboard():
 
 #判断当前文本是否经过加密
 def judge_encrypted( msg_str ):
-    msg_str = user_text.toPlainText()
     
     try:
         encrypt_bytes = viewableToBytes(msg_str)
@@ -223,12 +222,29 @@ def judge_encrypted( msg_str ):
     else:
         return False
 
+def pre_process(s):
+    #去掉末尾的空格,回车...
+    while True:
+        if s[-1] == ' ':
+            s = s[:-1]
+            print('i')
+        elif s[-1] == '\r':
+            s = s[:-1]
+            print('j')
+        elif s[-1] == '\n':
+            s = s[:-1]
+            print('k')
+        else:
+            break
+
+    return s
 
 def refresh_gui():
     global trans_button,encrypted_flag 
     
     encrypted_flag = False
     msg_str = user_text.toPlainText()
+    msg_str = pre_process(msg_str)
     
     if judge_encrypted(msg_str) == True:
         encrypted_flag = True
@@ -242,6 +258,7 @@ def trans():
     print('*'*50)
 
     text_str = user_text.toPlainText()
+    text_str = pre_process(text_str)
     print('len = %d,text = %s'%(len(text_str),text_str))
 
     key_str = key.text()
