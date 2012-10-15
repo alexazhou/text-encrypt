@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#pywin32_clipboard.py
+#clipboard.py
 #Direction:clipboard support,need PYWIN32 installed
 #2012-10-12 11:08:34 by zw zwholdu@gmail.com
 
@@ -35,5 +35,5 @@ if __name__ == '__main__':
     main()
     input('Press Enter to exit')
 else:
-    print ('pywin32_clipboard.py had been imported as a module')
+    print ('clipboard.py had been imported as a module')
 
