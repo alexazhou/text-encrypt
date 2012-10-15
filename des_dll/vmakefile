@@ -1,0 +1,17 @@
+#use vc compiler
+all: des_demo.exe
+
+des_demo.exe : des_demo.obj des_X2.dll des_X2.lib
+	cl des_demo.obj des_X2.lib
+
+des_demo.obj: des_demo.c des.h
+	cl -c des_demo.c
+
+des_X2.lib des_X2.dll: des_X2.obj
+	cl -LD des_X2.obj
+	
+des_X2.obj : des_X2.c des.h
+	cl -c des_X2.c
+	
+clean:
+	rm 2.txt 3.txt des_demo.exe des_demo.obj des_X2.dll des_X2.lib des_X2.exp des_X2.obj
