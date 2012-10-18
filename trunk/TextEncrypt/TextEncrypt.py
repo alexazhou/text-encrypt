@@ -6,6 +6,7 @@
 
 import ctypes
 import sys
+import os
 import hashlib
 import clipboard
 from PyQt4 import QtGui,QtCore
@@ -13,7 +14,7 @@ from PyQt4 import QtGui,QtCore
 
 byteMd5 = lambda b:hashlib.new('md5',b).digest()
 
-Version = '0.5'
+Version = '0.6'
 
 p = lambda s:ctypes.c_char_p(s)
 
@@ -188,6 +189,13 @@ def save2file(file_name):
     if file_name[-4:].upper() != '.TXT':
         file_name = file_name+'.txt'
     
+    #检查文件是否已经存在,并给出警告
+    if(os.path.exists(file_name)):
+        warn_msg = file_name + '已经存在,\n确定要覆盖吗?';
+        result = QtGui.QMessageBox.question(None,'警告',warn_msg,'是','否')
+        if result == 1:
+            return 
+
     with open(file_name,'w') as f:
         msg_str = user_text.toPlainText()
         f.write(msg_str)
