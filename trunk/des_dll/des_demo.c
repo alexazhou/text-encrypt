@@ -9,6 +9,11 @@ int main()
 {     
 	clock_t a,b;  
 	char *key = "ABCDEFGH12345678";
+	char tmp[100] ={0};
+	char tmp_2[100] ={0};
+
+	char *plainStr = "12345678abcdefgh1";
+	long int n_plain,n_cipher = 0;
 	
 	a = clock();  
 	DES_Encrypt("1.txt",key,"2.txt");  
@@ -22,11 +27,6 @@ int main()
 	printf("Ω‚√‹œ˚∫ƒ%d∫¡√Î\n",b-a);  
 	getchar(); 
 	
-	char tmp[100] ={0};
-	char tmp_2[100] ={0};
-
-	char *plainStr = "12345678abcdefgh1";
-	long int n_plain,n_cipher = 0;
 
 	DES_Encrypt_Data(plainStr,key,tmp,16);
 	printf("data len is %d\n",n_cipher);
